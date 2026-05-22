@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AssessmentType {
+  ASSIGNMENT
+  QUIZ
+  MIDTERM
+  FINAL
+  PROJECT
+  LAB
+}
+
+enum GoalType {
+  COURSE_GRADE
+  GPA
+  STUDY_HOURS
+}
+
+model Student {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  semesterStart DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  courses       Course[]
+  studySessions StudySession[]
+  goals         Goal[]
+}
+
+model Course {
+  id             String       @id @default(cuid())
+  studentId      String
+  code           String
+  title          String
+  creditHours    Int          @default(3)
+  targetGrade    Float?
+  difficultyBase Float        @default(1)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessments    Assessment[]
+
+  @@unique([studentId, code])
+}
+
+model Assessment {
+  id          String         @id @default(cuid())
+  courseId    String
+  name        String
+  type        AssessmentType
+  weight      Float
+  maxScore    Float          @default(100)
+  dueDate     DateTime
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+}
+
+model Submission {
+  id            String      @id @default(cuid())
+  assessmentId  String
+  submittedAt   DateTime
+  score         Float
+  timeSpentHrs  Float?
+  isLate        Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  assessment    Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+model StudySession {
+  id          String   @id @default(cuid())
+  studentId   String
+  courseCode  String
+  date        DateTime
+  durationHrs Float
+  productivity Int     @default(3)
+  createdAt   DateTime @default(now())
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  studentId   String
+  goalType    GoalType
+  targetValue Float
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
